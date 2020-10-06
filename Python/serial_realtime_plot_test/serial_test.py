@@ -13,7 +13,6 @@ if ser.is_open==True:
 
 
 size = struct.calcsize('fffffffff')
-print(size)
 
 while True:
     # #Aquire and parse data from serial port
