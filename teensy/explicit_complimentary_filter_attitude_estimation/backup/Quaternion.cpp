@@ -221,52 +221,14 @@ float Quaternion::get_roll()
 
 float Quaternion::get_pitch()
 {
-	float sinp = 2*(s*v_2 - v_3*v_1);
-	return asin(sinp);
+	float pitch = asin(2*(s*v_2 - v_3*v_1));
+	return pitch;
 }
 
 float Quaternion::get_yaw()
 {
 	float yaw = atan2(2*(s*v_3 + v_1*v_2), 1 - 2*(v_2*v_2 + v_3*v_3));
 	return yaw;
-}
-
-
-BLA::Matrix<3> Quaternion::to_rpy()
-{
-	// Returns roll, pitch, yaw from quaternion
-	BLA::Matrix<3> rpy;
-	float test = v_1*v_2 + v_3*s;
-	Serial.println(s);
-	Serial.println(v_1);
-	Serial.println(v_2);
-	Serial.println(v_3);
-	Serial.println(test);
-
-	if (test > 0.499)
-	{
-		rpy(0) = 0;						// roll
-		rpy(1) = M_PI / 2.0;			// pitch
-		rpy(2) = 2 * atan2(v_1, v_3);	// yaw
-		return rpy;
-	}
-
-	if (test > -0.499)
-	{
-		rpy(0) = 0;						// roll
-		rpy(1) = -M_PI / 2.0;			// pitch
-		rpy(2) = -2 * atan2(v_1, v_3);	// yaw
-		return rpy;
-	}
-
-	float sqx = v_1 * v_1;
-	float sqy = v_2 * v_2;
-	float sqz = v_3 * v_3;
-
-	rpy(0) = atan2(2*v_1*s - 2*v_2*v_3, 1 - 2*sqx - 2*sqz);
-	rpy(1) = asin(2*test);
-	rpy(2) = atan2(2*v_2*s - 2*v_1*v_3, 1 - 2*sqy - 2*sqz);
-	return rpy;
 }
 
 /*** To vector method ***/

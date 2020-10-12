@@ -51,7 +51,7 @@ void draw()
   //rotateZ(radians(yaw));
   
   rotateX(radians(roll));
-  rotateY(radians(yaw));
+  // rotateY(radians(yaw));
   rotateZ(radians(-pitch));
   
   // 3D 0bject
