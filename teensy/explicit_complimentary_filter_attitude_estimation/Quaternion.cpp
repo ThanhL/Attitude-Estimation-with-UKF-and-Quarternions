@@ -237,21 +237,22 @@ BLA::Matrix<3> Quaternion::to_rpy()
 	// Returns roll, pitch, yaw from quaternion
 	BLA::Matrix<3> rpy;
 	float test = v_1*v_2 + v_3*s;
-	Serial.println(s);
-	Serial.println(v_1);
-	Serial.println(v_2);
-	Serial.println(v_3);
+	// Serial.println(s);
+	// Serial.println(v_1);
+	// Serial.println(v_2);
+	// Serial.println(v_3);
 	Serial.println(test);
 
 	if (test > 0.499)
 	{
+		Serial.println("yess");
 		rpy(0) = 0;						// roll
 		rpy(1) = M_PI / 2.0;			// pitch
 		rpy(2) = 2 * atan2(v_1, v_3);	// yaw
 		return rpy;
 	}
 
-	if (test > -0.499)
+	if (test < -0.499)
 	{
 		rpy(0) = 0;						// roll
 		rpy(1) = -M_PI / 2.0;			// pitch
