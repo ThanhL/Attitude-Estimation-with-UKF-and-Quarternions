@@ -3,8 +3,6 @@ Math helpers implementation
 */
 #include "Arduino.h"
 #include "math_helpers.h"
-#include <BasicLinearAlgebra.h>
-
 
 float constrain_angle(float x)
 {

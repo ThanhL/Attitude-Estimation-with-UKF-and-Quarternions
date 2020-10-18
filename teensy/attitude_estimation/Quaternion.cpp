@@ -185,15 +185,28 @@ Quaternion Quaternion::vector_rotation_by_quaternion(const Quaternion v)
 }
 
 
-BLA::Matrix<3> UnitQuaternion::vector_rotation_by_quaternion(BLA::Matrix<3> v)
+// BLA::Matrix<3> UnitQuaternion::vector_rotation_by_quaternion(BLA::Matrix<3> v)
+// {
+// 	// Robotics vision and control quaternion vector rotation (p45) however returns a vector
+// 	// instead of a pure quaternion 0<v>
+// 	UnitQuaternion v_unit_quat = UnitQuaternion(0, v(0), v(1), v(2));
+// 	UnitQuaternion quat_result =  (*this) * v_unit_quat * conjugate();
+// 	BLA::Matrix<3> rotated_vec = {quat_result.v_1, quat_result.v_2, quat_result.v_3};
+// 	return rotated_vec;
+// }
+
+
+Eigen::Vector3d UnitQuaternion::vector_rotation_by_quaternion(Eigen::Vector3d v)
 {
 	// Robotics vision and control quaternion vector rotation (p45) however returns a vector
 	// instead of a pure quaternion 0<v>
 	UnitQuaternion v_unit_quat = UnitQuaternion(0, v(0), v(1), v(2));
 	UnitQuaternion quat_result =  (*this) * v_unit_quat * conjugate();
-	BLA::Matrix<3> rotated_vec = {quat_result.v_1, quat_result.v_2, quat_result.v_3};
-	return rotated_vec;
+
+	Eigen::Vector3d  rotated_vec(quat_result.v_1, quat_result.v_2, quat_result.v_3);
+	return rotated_vec;		
 }
+
 
 /*** Normalize Quaternion ***/
 float Quaternion::norm2()
@@ -271,9 +284,8 @@ BLA::Matrix<3> Quaternion::to_rpy()
 }
 
 /*** To vector method ***/
-// Converts quaternion to a BLA::Matrix 4x1 vector
-BLA::Matrix<4> Quaternion::to_vector()
+Eigen::Vector4d Quaternion::to_quaternion_vector()	
 {
-	BLA::Matrix<4> quat_vect = {this->s, this->v_1, this->v_2, this->v_3};
-	return quat_vect;	
+	Eigen::Vector4d quat_vect(this->s, this->v_1, this->v_2, this->v_3);
+	return quat_vect;
 }

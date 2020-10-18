@@ -4,12 +4,19 @@ https://www.nxp.com/files-static/sensors/doc/app_note/AN3461.pdf
 ***/
 #include "IMU_9DOF.h"
 #include "math_helpers.h"
+#include "debugging_helpers.h"
 #include "Quaternion.h"
 #include "UKF.h"
 #include <BasicLinearAlgebra.h>
 
+#include "Eigen.h"
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <Eigen/Cholesky>
+
 // --- Namespaces ---
 using namespace BLA;
+using namespace Eigen;
 
 // --- Magnetometer Values ---
 // Constants dervied from location: https://www.ngdc.noaa.gov/geomag/calculators/magcalc.shtml#igrfwmm
@@ -31,16 +38,11 @@ BLA::Matrix<3> initial_acc_measurement = {0.0, 0.0, 0.0};
 BLA::Matrix<3> initial_gyro_measurement = {0.0, 0.0, 0.0};
 BLA::Matrix<3> initial_mag_measurement = {0.0, 0.0, 0.0};
 
-// --- Explicit Comp Filter
-const float kI = 0.2;
-const float kP = 1;
-BLA::Matrix<3> b = {0.0, 0.0, 0.0};
-
-BLA::Matrix<3> g0 = {0, 0, 10};
-BLA::Matrix<3> m0 = {B_INTENSITY * cos(INCLINATION), 0.0, B_INTENSITY * sin(INCLINATION)};
-//BLA::Matrix<3> m0 = {0.5281, -0.1023, 0.8430};
-
 // --- Unscented Kalman Filter 
+Eigen::Vector3d g0(0,0,1);
+Eigen::Vector3d m0(B_INTENSITY * cos(INCLINATION), 0.0, B_INTENSITY * sin(INCLINATION));
+
+
 /*** sigma points ***/
 const float alpha = 0.3;
 const float beta = 2.0;
@@ -127,23 +129,25 @@ void setup()
                             mag.magnetic.z * 1e-6};
 
     // --- Testing SigmaPoints ---
-    Serial << "--- sigma points ---" << "\n";
-    Serial << "sigma alpha: " << sigma_points.alpha << "\n";
-    Serial << "sigma beta: " << sigma_points.beta << "\n";
-    Serial << "sigma kappa: " << sigma_points.kappa << "\n";
-
-    Serial << "Wm: " << sigma_points.compute_Wm() << "\n";
-    Serial << "Wc: " << sigma_points.compute_Wc() << "\n";
-
-
 
     // --- Testing Cholesky Decomp ---
-    BLA::Matrix<3,3> test_matrix;
-    BLA::Matrix<3,3> decomp_matrix;
-    decomp_matrix = cholesky_decomposition(test_matrix);
 
-    Serial << "Test matrix: " << test_matrix << "\n";
-    Serial << "Cholesky Decomp Matrix: " << decomp_matrix << "\n";
+
+    // --- Testing Quaternion Rotation ---
+    UnitQuaternion attitude_ecf(-0.76165, 0.53608, -0.32176, -0.1702);
+    UnitQuaternion invq_attitude_ecf = attitude_ecf.inverse();
+    
+    Eigen::Vector4d invq_vec = invq_attitude_ecf.to_quaternion_vector();
+    print_mtxd(invq_vec);
+
+    // Serial << "inv(attitude ecf): " << invq_attitude_ecf.to_vector() << "\n";
+    // Serial << "invq * g0: " << invq_attitude_ecf.vector_rotation_by_quaternion(g0) << "\n";
+
+    // --- Testing Skew matrix ---
+    Eigen::Vector3d x_test(1.0, 2.0, 3.0);
+    Eigen::Vector4d x_test_4d(1.0, 2.0, 3.0, 4.0);
+    print_mtxd(skew_matrix(x_test));
+    print_mtxd(skew_matrix(x_test_4d));
 }   
 
 void loop() 

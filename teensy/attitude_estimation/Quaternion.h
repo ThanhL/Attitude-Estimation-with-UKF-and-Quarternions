@@ -2,7 +2,12 @@
 #define QUATERNION_H
 
 #include "Arduino.h"
+#include "Eigen.h"
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <Eigen/Cholesky>
 #include "BasicLinearAlgebra.h"
+
 #include <vector> 
 #include <math.h>
 
@@ -48,7 +53,7 @@ public:
 	BLA::Matrix<3> to_rpy();
 
 	/*** To vector method ***/
-	BLA::Matrix<4> to_vector();
+	Eigen::Vector4d to_quaternion_vector();
 };
 
 class UnitQuaternion : public Quaternion
@@ -70,8 +75,8 @@ public:
 
 	/*** Vector rotated by quaternion ***/
 	// Note: v is pure quaternion i.e v = 0<v> 
-	BLA::Matrix<3> vector_rotation_by_quaternion(BLA::Matrix<3> v);
-
+	// BLA::Matrix<3> vector_rotation_by_quaternion(BLA::Matrix<3> v);
+	Eigen::Vector3d  vector_rotation_by_quaternion(Eigen::Vector3d v);
 };
 
 
