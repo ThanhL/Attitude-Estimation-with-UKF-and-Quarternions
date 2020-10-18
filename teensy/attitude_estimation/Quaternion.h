@@ -3,6 +3,7 @@
 
 #include "Arduino.h"
 #include "BasicLinearAlgebra.h"
+#include <vector> 
 #include <math.h>
 
 class Quaternion
