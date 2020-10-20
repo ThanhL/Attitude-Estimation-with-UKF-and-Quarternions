@@ -50,6 +50,7 @@ const float beta = 2.0;
 const float kappa = 0.1;
 
 MerwedSigmaPoints sigma_points(n_state_dim, alpha, beta, kappa);
+UKF ukf(sigma_points);
 
 
 // --- Estimated Attitude Quaternion ---
@@ -150,6 +151,9 @@ void setup()
 
     Serial.println("Skew matrix 4D:");
     print_mtxd(skew_matrix(x_test_4d));
+
+    // --- Testing UKF ---
+    ukf.debug();
 }   
 
 void loop() 
