@@ -59,6 +59,7 @@ public:
 	int x_dim;					// State dimension
 	Eigen::VectorXd x_hat;		// Estimated State (mean)
 	Eigen::VectorXd x_prior;	// x_state prediction (or x_bar)
+	Eigen::VectorXd x_post;		// x_state poseterior
 
 	// Measurement vector: []
 	int z_dim;
@@ -67,7 +68,8 @@ public:
 
 	// Posteriori Estimate Covariance Matrix 
 	Eigen::MatrixXd P;			// Posteriori estimate covariance matrix
-	Eigen::MatrixXd P_prior;	// Posteriori prediction cov matrix
+	Eigen::MatrixXd P_prior;	// Priori prediction cov matrix
+	Eigen::MatrixXd P_post;		// Posteriori cov matrix cache
 
 	/*** UKF Sigma Points ***/
 	// Sigma points

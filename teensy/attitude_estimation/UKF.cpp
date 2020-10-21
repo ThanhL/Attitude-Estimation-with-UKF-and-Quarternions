@@ -149,6 +149,9 @@ UKF::UKF()
 	z_prior = z;
 	P_prior = P;
 
+	x_post = x_hat;
+	P_post = P;
+
 	// Initialize Sigma Points
 	sigma_points = MerwedSigmaPoints(x_dim);
 
@@ -182,6 +185,9 @@ UKF::UKF(MerwedSigmaPoints merwed_sigma_points)
 	z_prior = z;
 	P_prior = P;
 
+	x_post = x_hat;
+	P_post = P;
+
 	// Initialize Sigma Points
 	sigma_points = merwed_sigma_points;
 
@@ -209,11 +215,11 @@ void UKF::predict(double dt)
 	// Pass sigmas into f(x)
 	for (int i = 0; i < sigma_points.num_sigma_points; i++)
 	{
-		sigmas.row(i) = f(sigmas.row(i), dt);
+		sigmas_f.row(i) = f(sigmas.row(i), dt);
 	}
 
 	// Compute unscented mean and covariance
-	std::tie(x_hat, P) = unscented_transform(sigmas,
+	std::tie(x_hat, P) = unscented_transform(sigmas_f,
 										sigma_points.Wm,
 										sigma_points.Wc,
 										Q);
@@ -226,7 +232,42 @@ void UKF::predict(double dt)
 void UKF::update(Eigen::MatrixXd z_measurement)
 {
 	// Pass the transformed sigmas into measurement function
-	
+	for (int i = 0; i < sigma_points.num_sigma_points; i++)
+	{
+		sigmas_h.row(i) = h(sigmas_f.row(i));
+	}
+
+	// Compute mean and covariance using unscented transform
+	Eigen::VectorXd zp;
+	Eigen::MatrixXd Pz;
+
+	std::tie(zp, Pz) = unscented_transform(sigmas_h,
+										sigma_points.Wm,
+										sigma_points.Wc,
+										R);
+
+	// Compute cross variance of state and measurements
+	Eigen::MatrixXd Pxz = Eigen::MatrixXd::Zero(x_dim, z_dim);
+
+	for (int i = 0; i < sigma_points.num_sigma_points; i++)
+	{
+		Eigen::VectorXd x_diff = sigmas_f.row(i) - x_prior.transpose();
+		Eigen::VectorXd z_diff = sigmas_h.row(i) - zp.transpose();
+
+		Pxz = Pxz + sigma_points.Wc(i) * x_diff * z_diff.transpose();
+	}
+
+	// Compute Kalman Gain
+	Eigen::VectorXd y = z_measurement - zp;
+	Eigen::VectorXd K = Pxz * Pz.inverse();
+
+	// TODO: Double check matrix dimensions!!
+	x_hat = x_prior + K * y;
+	P = P_prior - K * Pz * K.transpose();
+
+	// Save posterior
+	x_post = x_hat.replicate(1,1);
+	P_post = P.replicate(1,1);
 }
 
 
@@ -247,10 +288,6 @@ std::tuple<Eigen::VectorXd, Eigen::MatrixXd> UKF::unscented_transform(Eigen::Mat
 	for (int k = 0; k < kmax; k++)
 	{
 		Eigen::VectorXd y = sigmas.row(k) - mu.transpose();
-		Serial.println("yyyyyyyy:");
-		print_mtxd(y);
-		print_mtxd(Wc(k) * y * y.transpose());
-
 		P_cov = P_cov + Wc(k) * y * y.transpose() ;
 	}
 
