@@ -144,6 +144,11 @@ UKF::UKF()
 	// Intialize Posteriori Estimate Covariance Matrix
 	P = Eigen::MatrixXd::Zero(x_dim, x_dim);
 
+	// Initialize prior predictions
+	x_prior = x_hat;
+	z_prior = z;
+	P_prior = P;
+
 	// Initialize Sigma Points
 	sigma_points = MerwedSigmaPoints(x_dim);
 
@@ -172,6 +177,11 @@ UKF::UKF(MerwedSigmaPoints merwed_sigma_points)
 	// Intialize Posteriori Estimate Covariance Matrix
 	P = Eigen::MatrixXd::Zero(x_dim, x_dim);
 
+	// Initialize prior predictions
+	x_prior = x_hat;
+	z_prior = z;
+	P_prior = P;
+
 	// Initialize Sigma Points
 	sigma_points = merwed_sigma_points;
 
@@ -193,16 +203,76 @@ UKF::~UKF()
 /*** Prediction + Update ***/
 void UKF::predict(double dt)
 {
+	// Compute the sigma points for given mean and posteriori covariance
+	Eigen::MatrixXd sigmas = sigma_points.calculate_sigma_points(x_hat, P);
 
+	// Pass sigmas into f(x)
+	for (int i = 0; i < sigma_points.num_sigma_points; i++)
+	{
+		sigmas.row(i) = f(sigmas.row(i), dt);
+	}
 
+	// Compute unscented mean and covariance
+	std::tie(x_hat, P) = unscented_transform(sigmas,
+										sigma_points.Wm,
+										sigma_points.Wc,
+										Q);
 
+	// Save prior
+	x_prior = x_hat.replicate(1,1);
+	P_prior = P.replicate(1,1);
 }
 
 void UKF::update(Eigen::MatrixXd z_measurement)
 {
-
+	// Pass the transformed sigmas into measurement function
+	
 }
 
+
+
+std::tuple<Eigen::VectorXd, Eigen::MatrixXd> UKF::unscented_transform(Eigen::MatrixXd sigmas,
+																Eigen::MatrixXd Wm,
+																Eigen::MatrixXd Wc,
+																Eigen::MatrixXd noise_cov)
+{
+	// Compute new mean
+	Eigen::VectorXd mu = sigmas.transpose() * Wm;	// Vectorization of sum(wm_i* sigma_i)
+
+	// Compute new covariance matrix
+	int kmax = sigmas.rows();
+	int n = sigmas.cols();
+	Eigen::MatrixXd P_cov = Eigen::MatrixXd::Zero(n,n);
+
+	for (int k = 0; k < kmax; k++)
+	{
+		Eigen::VectorXd y = sigmas.row(k) - mu.transpose();
+		Serial.println("yyyyyyyy:");
+		print_mtxd(y);
+		print_mtxd(Wc(k) * y * y.transpose());
+
+		P_cov = P_cov + Wc(k) * y * y.transpose() ;
+	}
+
+	return std::make_tuple(mu, P_cov);
+}
+
+/*** Nonlinear Functions ***/
+// Process Model
+Eigen::MatrixXd f(Eigen::MatrixXd sigmas, double dt)
+{
+	// TODO: Implement
+	Eigen::MatrixXd transformed_sigmas;
+	return sigmas;
+}
+
+// Measurement Model
+Eigen::MatrixXd h(Eigen::MatrixXd sigmas)
+{
+	// TODO: Implement
+	Eigen::MatrixXd transformed_sigmas;
+	return sigmas;
+}
 
 /*** Arduino Debugging ***/
 void UKF::debug()

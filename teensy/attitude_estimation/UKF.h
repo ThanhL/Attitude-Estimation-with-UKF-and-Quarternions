@@ -8,6 +8,7 @@
 #include <Eigen/Dense>
 #include <Eigen/Cholesky>
 #include <math.h>
+#include <tuple>
 
 // Hacky Soln to template matrix from BasicLinearAlgebra library. Not best practice
 // TODO: find a better of creating this class that doesn't rely on
@@ -56,14 +57,17 @@ public:
 	/*** UKF State Variables ***/
 	// State vector: [q0 q1 q2 q3 wx wy wz].T
 	int x_dim;					// State dimension
-	Eigen::VectorXd x_hat;		// Estimated State
+	Eigen::VectorXd x_hat;		// Estimated State (mean)
+	Eigen::VectorXd x_prior;	// x_state prediction (or x_bar)
 
 	// Measurement vector: []
 	int z_dim;
-	Eigen::VectorXd z;
+	Eigen::VectorXd z;			// z_state
+	Eigen::VectorXd z_prior;	// z_state prediction (or z_bar)
 
 	// Posteriori Estimate Covariance Matrix 
-	Eigen::MatrixXd P;
+	Eigen::MatrixXd P;			// Posteriori estimate covariance matrix
+	Eigen::MatrixXd P_prior;	// Posteriori prediction cov matrix
 
 	/*** UKF Sigma Points ***/
 	// Sigma points
@@ -106,6 +110,15 @@ public:
 	/*** Prediction + Update Steps ***/
 	void predict(double dt);
 	void update(Eigen::MatrixXd z_measurement);
+
+	std::tuple<Eigen::VectorXd, Eigen::MatrixXd> unscented_transform(Eigen::MatrixXd sigmas,
+																	Eigen::MatrixXd Wm,
+																	Eigen::MatrixXd Wc,
+																	Eigen::MatrixXd noise_cov);
+
+	/*** Nonlinear functions **/
+	Eigen::MatrixXd f(Eigen::MatrixXd sigmas, double dt);
+	Eigen::MatrixXd h(Eigen::MatrixXd sigmas);
 
 	/*** Arduino Debugging ***/
 	void debug();

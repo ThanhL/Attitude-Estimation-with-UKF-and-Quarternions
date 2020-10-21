@@ -154,6 +154,48 @@ void setup()
 
     // --- Testing UKF ---
     ukf.debug();
+
+    // --- Testing Unscented Transform ---
+    const int n = 2;
+    Eigen::VectorXd wm(2*n + 1);
+    wm << 0, 1, 2, 3, 4;
+
+    Eigen::VectorXd wc(2*n + 1);
+    wc << 5, 6, 7, 8, 9;
+
+    Eigen::MatrixXd sigmas(2*n + 1, n);
+    sigmas << 0, 1,
+            2, 1,
+            0, 0,
+            3, 4,
+            1, 1;
+
+
+    Eigen::MatrixXd Q = Eigen::MatrixXd::Zero(n,n);
+
+
+    Eigen::VectorXd mu;
+    Eigen::MatrixXd P_cov;
+
+    std::tie(mu, P_cov) = ukf.unscented_transform(sigmas, wm, wc, Q);
+
+
+    Serial.println("---- Testing Unscented Transform -----");
+    
+    Serial.println("wm: ");
+    print_mtxd(wm);
+
+    Serial.println("wc: ");
+    print_mtxd(wc);
+
+    Serial.println("sigmas: ");
+    print_mtxd(sigmas);
+
+    Serial.println("mu: ");
+    print_mtxd(mu);
+
+    Serial.println("P_cov: ");
+    print_mtxd(P_cov);
 }   
 
 void loop() 
