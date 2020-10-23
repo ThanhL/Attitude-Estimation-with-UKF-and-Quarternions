@@ -62,7 +62,7 @@ UnitQuaternion UnitQuaternion::omega(float wx, float wy, float wz)
 	// EQN referral: https://math.stackexchange.com/questions/39553/how-do-i-apply-an-angular-velocity-vector3-to-a-unit-quaternion-orientation
 	UnitQuaternion uq;
 
-	float theta = sqrt(wx*wx + wy*wy + wz*wz);
+	float theta = sqrt(wx*wx + wy*wy + wz*wz) + 1.0e-12;	// Add a little bit of eps to avoid blowing up
 	uq.s = cos(theta/2.0);
 	uq.v_1 = sin(theta/2.0) * (wx / theta);
 	uq.v_2 = sin(theta/2.0) * (wy / theta);
@@ -217,7 +217,7 @@ float Quaternion::norm2()
 
 void Quaternion::normalize()
 {
-	float q_magnitude = norm2();
+	float q_magnitude = norm2() + 1.0e-12;
 	s /= q_magnitude;
 	v_1 /= q_magnitude;
 	v_2 /= q_magnitude;
