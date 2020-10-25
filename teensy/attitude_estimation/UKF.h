@@ -2,7 +2,6 @@
 #define UKF_H
 
 #include "Arduino.h"
-#include "BasicLinearAlgebra.h"
 #include "Eigen.h"
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -12,11 +11,6 @@
 
 #include "Quaternion.h"
 
-// Hacky Soln to template matrix from BasicLinearAlgebra library. Not best practice
-// TODO: find a better of creating this class that doesn't rely on
-// global variables
-// const int n = 7;		// State space dimensions x_state = [q0 q1 q2 q3 wx wy wz].T
-// const int num_sigma_points = 2*n + 1;
 
 // --- Global Frame Values ---
 // Magnetometer
@@ -24,10 +18,6 @@
 #define INCLINATION -68.5006 * (PI/180.0)      // Inclination Angle (rads) 
 #define DECLINATION 11.4017 * (PI/180.0)       // Declination Angle (rads)
 #define B_INTENSITY 21951.5e-9                 // Magnetic Field Intensity (Tesla)
-
-// Inertial reference frame of gravity and magnetometer (will be used in prediction for UKF)
-// Eigen::Vector3d g0(0,0,1);
-// Eigen::Vector3d m0(B_INTENSITY * cos(INCLINATION), 0.0, B_INTENSITY * sin(INCLINATION));
 
 
 // Merwe Scaled Sigma points for UKF
@@ -101,21 +91,9 @@ public:
 	// Observation noise covariance matrix
 	Eigen::MatrixXd R;
 
-	// Standard deviations 
-	// // TODO: Probably remove, not needed just input into the Q,R matrices. 
-	// double process_std_q0;		// process noise of quaternion
-	// double process_std_q1; 		
-	// double process_std_q2;
-	// double process_std_q3;
-
-	// double process_std_wx;
-	// double process_std_wy;
-	// double process_std_wz;
-
-	// double meas_std_acc;	// measurement noise stddev of accelerometer in m/s^2
-	// double meas_std_gyro;	// measurement noise stddev of gyroscope in rad/s^2
-	// double meas_std_mag;	// measurement noise stddev of magnetometer in tesla
-
+	// Inertial frame of gravity and magnetometer values
+	// g0 eqn (Robotics Vision and Control p83)
+	// m0 eqn (Robotics Vision and Control p85)
 	Eigen::Vector3d g0;
 	Eigen::Vector3d m0;
 
@@ -128,11 +106,11 @@ public:
 	virtual ~UKF();
 
 	/*** Prediction + Update Steps ***/
-	void predict(double dt);
+	void predict_with_radar_model(double dt);
 	void predict_with_quaternion_model(double dt, Eigen::VectorXd u_t);
 	void predict_with_quaternion_ang_vec_model(double dt, Eigen::VectorXd u_t);
 
-	void update(Eigen::MatrixXd z_measurement);
+	void update_with_radar_model(Eigen::MatrixXd z_measurement);
 	void update_with_quaternion_model(Eigen::MatrixXd z_measurement);
 	void update_with_quaternion_ang_vec_model(Eigen::MatrixXd z_measurement);
 

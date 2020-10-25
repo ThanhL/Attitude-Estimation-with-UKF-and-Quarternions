@@ -22,7 +22,7 @@ String data="";
 float roll, pitch, yaw;
 float qw, qx, qy, qz;
 
-// --- Quaternion ---
+// --- Apply Quaternion Rotation ---
 void apply_quaternion_rotation(float qw, float qx, float qy, float qz)
 { 
   // Since processing has coordinate system following left handed rule we need to convert
@@ -63,11 +63,6 @@ void setup()
   ////mesh=(TriangleMesh)new STLReader().loadBinary(sketchPath("mesh-flipped.stl"),STLReader.TRIANGLEMESH).flipYAxis();
   //gfx=new ToxiclibsSupport(this);
   
-  
-  //// --- Setup the Serial Communication ---
-  //teensy_port = new Serial(this, "COM6", 9600); // starts the serial communication
-  //teensy_port.bufferUntil('\n');
-  
   // Define dimensions of the processing visualization
   size (960, 640, P3D);
 
@@ -102,8 +97,6 @@ void draw()
 }
 
 
-
-
 // --- Read data from the Serial Port ---
 void serialEvent (Serial myPort) 
 { 
@@ -116,12 +109,7 @@ void serialEvent (Serial myPort)
     // split the string at "/"
     String items[] = split(data, '\t');
     if (items.length > 1) 
-    {
-      ////--- Roll,Pitch in degrees
-      //roll = float(items[0]);
-      //pitch = float(items[1]);
-      //yaw = float(items[2]);
-    
+    {   
       // --- quaternion
       qw = float(items[0]);
       qx = float(items[1]);

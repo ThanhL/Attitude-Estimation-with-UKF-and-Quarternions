@@ -7,7 +7,6 @@ https://www.nxp.com/files-static/sensors/doc/app_note/AN3461.pdf
 #include "debugging_helpers.h"
 #include "Quaternion.h"
 #include "UKF.h"
-#include <BasicLinearAlgebra.h>
 
 #include "Eigen.h"
 #include <Eigen/Core>
@@ -15,25 +14,17 @@ https://www.nxp.com/files-static/sensors/doc/app_note/AN3461.pdf
 #include <Eigen/Cholesky>
 
 // --- Namespaces ---
-using namespace BLA;
 using namespace Eigen;
 
 // --- IMU Global ---
+// IMU sensor initialized
 IMU_9DOF imu_9dof;
-imu_data_t imu_data;
 
 // --- Sensor Measurements ----
+// Sensor measurements @ time t (i.e current sensor measurements)
 Eigen::Vector3d acc_measurement;
 Eigen::Vector3d gyro_measurement;
 Eigen::Vector3d mag_measurement;
-
-Eigen::Vector3d initial_acc_measurement(0.0, 0.0, 0.0);
-Eigen::Vector3d initial_gyro_measurement(0.0, 0.0, 0.0);
-Eigen::Vector3d initial_mag_measurement(0.0, 0.0, 0.0);
-
-// const double mag_hardiron_offset_x = 102.14;
-// const double mag_hardiron_offset_y = -120.37;
-// const double mag_hardiron_offset_z = 267.32;
 
 // Hard Iron offets (uT)
 // These values were calculated using magnetometer calibration steps from jupyter notebook
@@ -51,21 +42,20 @@ const float gyro_offset_x = 0.06285;
 const float gyro_offset_y = -0.08785;;
 const float gyro_offset_z = -0.06815;;
 
-// --- Unscented Kalman Filter 
+/*** --- Unscented Kalman Filter --- ***/
 /*** sigma points ***/
-const int n_state_dim = 7;
+const int n_state_dim = 7;  // x_state dimension
 const float alpha = 0.3;
 const float beta = 2.0;
 const float kappa = 0.1;
 
 MerwedSigmaPoints sigma_points(n_state_dim, alpha, beta, kappa);
+
+/*** Unscented Kalman Filter itself ***/
 UKF quat_ukf(sigma_points);
 
-
-// --- Estimated Attitude Quaternion ---
-UnitQuaternion attitude;
-
-// --- Delta time calculations 
+// --- Delta time calculations ---
+// Previous time to calculate delta time
 unsigned long prev_time = 0;
 
 float calculate_delta_time()
@@ -115,7 +105,6 @@ void setup()
     imu_9dof.get_gyroscope_settings();
     imu_9dof.get_magnetometer_settings();   
 
-
     // --- Debug UKF before the main execution ---
     quat_ukf.debug();
 
@@ -151,33 +140,19 @@ void loop()
     float dt = calculate_delta_time();
 
     // --- Calculate Roll, pitch, yaw  
-    // // Quaternion with bias model
-    // // Predict with UKF
-    // quat_ukf.predict_with_quaternion_model(dt, gyro_measurement);
-
-    // // Cocantenate accelerometer and magnetometer for measurement
-    // Eigen::VectorXd z_measurement(acc_measurement.size() + mag_measurement.size());
-    // z_measurement << acc_measurement, mag_measurement;
-
-    // // Update UKF with measurements 
-    // quat_ukf.update_with_quaternion_model(z_measurement);
-
-
-    // Quaternion with ang vec model
-    // Predict with UKF
+    // Predict step with UKF's quaternion with ang vec model
     quat_ukf.predict_with_quaternion_ang_vec_model(dt, gyro_measurement);
 
-    // Cocantenate accelerometer and magnetometer for measurement
+    // Cocantenate gyroscope, accelerometer and magnetometer for measurement
+    // z_measurement = [z_gyro, z_acc, z_mag].T
     Eigen::VectorXd z_measurement(gyro_measurement.size() + acc_measurement.size() + mag_measurement.size());
     z_measurement << gyro_measurement, acc_measurement, mag_measurement;
 
-    // Update UKF with measurements 
+    // Update step UKF with measurements 
     quat_ukf.update_with_quaternion_ang_vec_model(z_measurement);
 
     // --- Output to Serial ---
-    //print_mtxd(quat_ukf.x_hat.transpose());
-
-
+    // Quaternion states
     Serial.print(quat_ukf.x_hat(0));
     Serial.print("\t");  
     Serial.print(quat_ukf.x_hat(1));
@@ -187,6 +162,7 @@ void loop()
     Serial.print(quat_ukf.x_hat(3));
     Serial.print("\t"); 
 
+    // Angular Velocity states
     // Serial.print(quat_ukf.x_hat(4));
     // Serial.print("\t"); 
     // Serial.print(quat_ukf.x_hat(5));

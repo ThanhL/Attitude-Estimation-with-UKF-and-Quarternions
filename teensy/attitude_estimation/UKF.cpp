@@ -4,6 +4,9 @@
 /*** ------ Sigma points --------- ***/
 MerwedSigmaPoints::MerwedSigmaPoints()
 {
+    /***
+    Merwe Sigma Point Default Constructor
+    ***/    
     // Default Constructor with default parameters
     this->n = n;
     this->num_sigma_points = int(2*n + 1);
@@ -21,6 +24,12 @@ MerwedSigmaPoints::MerwedSigmaPoints()
 
 MerwedSigmaPoints::MerwedSigmaPoints(int n)
 {
+    /***
+    Merwe Sigma Point Default Constructor
+
+    Inputs:
+    n: state dimension of state estimate
+    ***/    
     // Num sigma points
     this->n = n;
     this->num_sigma_points = int(2*n + 1);
@@ -38,6 +47,15 @@ MerwedSigmaPoints::MerwedSigmaPoints(int n)
 
 MerwedSigmaPoints::MerwedSigmaPoints(int n, double alpha, double beta, double kappa)
 {
+    /***
+    Merwe Sigma Point Generalized Constructor
+
+    Inputs:
+    n: state dimension of state estimate
+    alpha: alpha param for Merwe Sigma point
+    beta: beta param of Merwe Sigma Point
+    kappa: kappa param of Merwe Sigma Point
+    ***/
     // Num sigma points
     this->n = n;
     this->num_sigma_points = int(2*n + 1);
@@ -61,6 +79,13 @@ MerwedSigmaPoints::~MerwedSigmaPoints()
 /*** Weight computation ***/
 Eigen::VectorXd MerwedSigmaPoints::compute_Wm()
 {
+    /***
+    Calculates The Weighted Mean for Merwe Sigma Points
+
+    Outputs:
+    Wm: (2n+1)x(n) Weight Mean
+    ***/
+
     // Compute lambda
     double lambda_ = alpha*alpha * (n + kappa) - n;
 
@@ -83,6 +108,13 @@ Eigen::VectorXd MerwedSigmaPoints::compute_Wm()
 
 Eigen::VectorXd MerwedSigmaPoints::compute_Wc()
 {
+    /***
+    Calculates The Weighted Covariance for Merwe Sigma Points
+
+    Outputs:
+    Wc: (2n+1)x(n) Weight Covariance
+    ***/
+
     // Compute lambda
     double lambda_ = alpha*alpha * (n + kappa) - n;
 
@@ -107,10 +139,13 @@ Eigen::VectorXd MerwedSigmaPoints::compute_Wc()
 Eigen::MatrixXd MerwedSigmaPoints::calculate_sigma_points(Eigen::VectorXd mean, Eigen::MatrixXd cov)
 {
     /***
-    Calculates Merwed Sigma Points
+    Calculates Merwe Sigma Points
     Inputs:
     mean: nx1 matrix of state mean
     cov: nxn covariance matrix
+
+    Outputs:
+    sigma_points: (2n+1) Merwe Sigma Points
     ***/
     // Init sigma point array
     Eigen::MatrixXd sigma_points = Eigen::MatrixXd::Zero(num_sigma_points,n);
@@ -142,6 +177,9 @@ Eigen::MatrixXd MerwedSigmaPoints::calculate_sigma_points(Eigen::VectorXd mean, 
 /*** Arduino Debugging ***/ 
 void MerwedSigmaPoints::debug()
 {
+    /***
+    Debug Merwe Sigma Points to Serial
+    ***/    
     Serial.println("------- Debugging Sigma Points -------");
     Serial.print("n: ");
     Serial.println(n);
@@ -169,98 +207,142 @@ void MerwedSigmaPoints::debug()
 /*** Constructors ***/
 UKF::UKF()
 {
-    /*** Quaternion Constructor ***/
+    /***
+    Unscented Kalman Filter Constructor
+    
+    This is a default constructor for the Unscented Kalman Filter for Orientation Estimation
+    using Quaternions. The state space is:
+
+    x = [q0 q1 q2 q3 omega_x, omega_y, omega_z].T
+
+    where (q0,q1,q2,q3) are the quaternion elements of the following quaternion 
+    q0 + q1*i + q2*j + q3*k. (omega_x, omega_y, omega_z) is the angular velocity.
+
+    The z measurement state space is:
+
+    z = [z_gyro, z_acc, z_mag].T
+
+    where z_gyro is the measurement from the gyro, z_acc is the measurement from the accelerometer
+    z_mag is the measurement from the magnetometer. Note that these measurements are in the 
+    body frame.
+    ***/
     // Initialize x state vector
     x_dim = 7;
     x_hat = Eigen::VectorXd::Zero(x_dim);
     x_hat << 1, 0, 0, 0, 0, 0, 0;   // Initial Quaterion: 1+0i+0j+0k and initial ang vel: [0 0 0].T
  
     // Initialize z state vector
-    z_dim = 6;
-    z = Eigen::VectorXd::Zero(z_dim);
-    z << 0, 0, 0;                   // Initial measurement in frame {B}, [z_acc, z_mag].T
+    z_dim = 9;
+    z = Eigen::VectorXd::Zero(z_dim); // Initial measurement in frame {B}, [z_gyro, z_acc, z_mag].T
 
     // Intialize Posteriori Estimate Covariance Matrix
     P = Eigen::MatrixXd::Zero(x_dim, x_dim);
 
-    // Initialize prior predictions
+    // Initialize Prior Estimates
     x_prior = x_hat;
     z_prior = z;
     P_prior = P;
 
+    // Initial Posterior Estimates
     x_post = x_hat;
     P_post = P;
 
     // Initialize Sigma Points
     sigma_points = MerwedSigmaPoints(x_dim);
 
-    sigmas_f = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, x_dim);
-    sigmas_h = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, z_dim);
+    sigmas_f = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, x_dim); // Predicted sigma points
+    sigmas_h = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, z_dim); // Measurement sigma points
 
     // Initialize noise matrices
-    Q = Eigen::MatrixXd::Identity(x_dim, x_dim) * 0.001;
+    Q = Eigen::MatrixXd::Identity(x_dim, x_dim) * 0.001;    // Process Noise Matrix
     
-    R = Eigen::MatrixXd::Identity(z_dim, z_dim) * 0.1;
+    R = Eigen::MatrixXd::Identity(z_dim, z_dim) * 0.1;      // Measurement Noise Matrix
 
     // Intialize inertial frame quantities
-    g0 << 0, 0, 1;
-    m0 << B_INTENSITY * cos(INCLINATION), 0.0, B_INTENSITY * sin(INCLINATION);
+    g0 << 0, 0, 1;                              // Gravitational Acceleration Vector
+    m0 << B_INTENSITY * cos(INCLINATION),       // Magnetic Field Intensity Vector 
+        0.0, 
+        B_INTENSITY * sin(INCLINATION); 
 }
 
 
 UKF::UKF(MerwedSigmaPoints merwed_sigma_points)
 {
-    /*** Quaternion Constructor ***/
+    /***
+    Unscented Kalman Filter Constructor with Merwe Sigma Points
+    
+    This is a default constructor for the Unscented Kalman Filter for Orientation Estimation
+    using Quaternions. The constructor takes in Merwe sigma points and assigns it to the UKF.
+
+    The state space is:
+
+    x = [q0 q1 q2 q3 omega_x, omega_y, omega_z].T
+
+    where (q0,q1,q2,q3) are the quaternion elements of the following quaternion 
+    q0 + q1*i + q2*j + q3*k. (omega_x, omega_y, omega_z) is the angular velocity.
+
+    The z measurement state space is:
+
+    z = [z_gyro, z_acc, z_mag].T
+
+    where z_gyro is the measurement from the gyro, z_acc is the measurement from the accelerometer
+    z_mag is the measurement from the magnetometer. Note that these measurements are in the 
+    body frame.
+    ***/
     // Initialize x state vector
     x_dim = 7;
     x_hat = Eigen::VectorXd::Zero(x_dim);
     x_hat << 1, 0, 0, 0, 0, 0, 0;   // Initial Quaterion: 1+0i+0j+0k and initial ang vel: [0 0 0].T
  
-    // // Initialize z state vector
-    // z_dim = 6;
-    // z = Eigen::VectorXd::Zero(z_dim);
-    // z << 0, 0, 0, 0, 0, 0;                   // Initial measurement in frame {B}, [z_acc, z_mag].T
-
-    // TODO: TEST NEW SS MODEL
+    // Initialize z state vector
     z_dim = 9;
-    z = Eigen::VectorXd::Zero(z_dim);
+    z = Eigen::VectorXd::Zero(z_dim); // Initial measurement in frame {B}, [z_gyro, z_acc, z_mag].T
 
     // Intialize Posteriori Estimate Covariance Matrix
     P = Eigen::MatrixXd::Zero(x_dim, x_dim);
 
-    // Initialize prior predictions
+    // Initialize Prior Estimates
     x_prior = x_hat;
     z_prior = z;
     P_prior = P;
 
+    // Initial Posterior Estimates
     x_post = x_hat;
     P_post = P;
 
-    // Initialize Sigma Points
+    // Assign the sigma points into UKF class
     sigma_points = merwed_sigma_points;
 
-    sigmas_f = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, x_dim);
-    sigmas_h = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, z_dim);
+    sigmas_f = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, x_dim); // Predicted sigma points
+    sigmas_h = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, z_dim); // Measurement sigma points
 
     // Initialize noise matrices
-    Q = Eigen::MatrixXd::Identity(x_dim, x_dim) * 0.001;
+    Q = Eigen::MatrixXd::Identity(x_dim, x_dim) * 0.001;    // Process Noise Matrix
 
     //R = Eigen::MatrixXd::Identity(z_dim, z_dim) * 0.1;
-    R = Eigen::MatrixXd::Identity(z_dim, z_dim) * 0.5;
-
-    R(0,0) = 5;
-    R(1,1) = 5;
-    R(2,2) = 5;
-
-
+    R = Eigen::MatrixXd::Identity(z_dim, z_dim) * 0.5;      // Measurement Noise Matrix
 
     // Intialize inertial frame quantities
-    g0 << 0, 0, 1;
-    m0 << B_INTENSITY * cos(INCLINATION), 0.0, B_INTENSITY * sin(INCLINATION);
+    g0 << 0, 0, 1;                          // Gravitational Acceleration Vector
+    m0 << B_INTENSITY * cos(INCLINATION),   // Magnetic Field Intensity Vector
+        0.0, 
+        B_INTENSITY * sin(INCLINATION);
 }
 
 UKF::UKF(int x_dim_, int z_dim_, MerwedSigmaPoints merwed_sigma_points)
 {
+    /***
+    General Unscented Kalman Filter Constructor
+    
+    This is a general constructor for the Unscented Kalman Filter. This is intended for any 
+    state space for any dimension for the state/measurement variables. It also takes in a 
+    merwe sigma points to be assigned to UKF.
+
+    Inputs:
+    x_dim_: dimension of the estimated state variables
+    z_dim_: dimension of the measurement state variables
+
+    ***/
     // Initialize x state vector
     x_dim = x_dim_;
     x_hat = Eigen::VectorXd::Zero(x_dim);
@@ -272,24 +354,25 @@ UKF::UKF(int x_dim_, int z_dim_, MerwedSigmaPoints merwed_sigma_points)
     // Intialize Posteriori Estimate Covariance Matrix
     P = Eigen::MatrixXd::Zero(x_dim, x_dim);
 
-    // Initialize prior predictions
+    // Initialize Prior Estimates
     x_prior = x_hat;
     z_prior = z;
     P_prior = P;
 
+    // Initial Posterior Estimates
     x_post = x_hat;
     P_post = P;
 
     // Initialize Sigma Points
     sigma_points = merwed_sigma_points;
 
-    sigmas_f = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, x_dim);
-    sigmas_h = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, z_dim);
+    sigmas_f = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, x_dim); // Predicted sigma points
+    sigmas_h = Eigen::MatrixXd::Zero(sigma_points.num_sigma_points, z_dim); // Measurement sigma points
 
     // Initialize noise matrices
-    Q = Eigen::MatrixXd::Identity(x_dim, x_dim);
+    Q = Eigen::MatrixXd::Identity(x_dim, x_dim);    // Process Noise Matrix
 
-    R = Eigen::MatrixXd::Identity(z_dim, z_dim);
+    R = Eigen::MatrixXd::Identity(z_dim, z_dim);    // Measurement Noise Matrix
 
 }
 
@@ -300,17 +383,18 @@ UKF::~UKF()
 }
 
 /*** Prediction + Update ***/
-// --- Standard ---
-void UKF::predict(double dt)
+// --- Radar example (This is used for testing UKF) ---
+void UKF::predict_with_radar_model(double dt)
 {
+    /***
+    Dummy Radar Process Model example used for testing UKF
+    ***/
     // Compute the sigma points for given mean and posteriori covariance
     Eigen::MatrixXd sigmas = sigma_points.calculate_sigma_points(x_hat, P);
 
     // Pass sigmas into f(x)
     for (int i = 0; i < sigma_points.num_sigma_points; i++)
     {
-        // sigmas_f.row(i) = f(sigmas.row(i), dt);
-
         // TODO: Remove Just testing for now
         sigmas_f.row(i) = f_cv_radar(sigmas.row(i), dt);
     }
@@ -327,13 +411,14 @@ void UKF::predict(double dt)
 }
 
 
-void UKF::update(Eigen::MatrixXd z_measurement)
+void UKF::update_with_radar_model(Eigen::MatrixXd z_measurement)
 {
+    /***
+    Dummy Radar Measurement Function example used for testing UKF
+    ***/    
     // Pass the transformed sigmas into measurement function
     for (int i = 0; i < sigma_points.num_sigma_points; i++)
     {
-        // sigmas_h.row(i) = h(sigmas_f.row(i));
-
         // TODO: Remove Just testing for now
         sigmas_h.row(i) = h_radar(sigmas_f.row(i));
     }
@@ -364,28 +449,6 @@ void UKF::update(Eigen::MatrixXd z_measurement)
     Eigen::MatrixXd Pz_inv = Pz.inverse();
     Eigen::MatrixXd K = Pxz * Pz_inv;
 
-    // Serial.println("--- zp ---");
-    // print_mtxd(zp.transpose());
-
-    // Serial.println("--- Pz ---");
-    // print_mtxd(Pz);
-
-    // Serial.println("--- y ---");
-    // print_mtxd(y);
-
-    // Serial.println("--- K ---");
-    // print_mtxd(K);
-
-    // Serial.println("--- Pxz ---");
-    // print_mtxd(Pxz);
-
-    // Serial.println("--- inv Pz ---");
-    // print_mtxd(Pz.inverse());
-
-    // Serial.println("--- K = Pxz * inv(Pz) ---");
-    // print_mtxd(Pxz * Pz_inv);
-
-    // TODO: Double check matrix dimensions!!
     x_hat = x_prior + K * y;
     P = P_prior - K * Pz * K.transpose();
 
@@ -394,7 +457,7 @@ void UKF::update(Eigen::MatrixXd z_measurement)
     P_post = P.replicate(1,1);
 }
 
-// --- Quaternion Model ---
+// --- Quaternion Model with angular velocity biases ---
 void UKF::predict_with_quaternion_model(double dt, Eigen::VectorXd u_t)
 {
     /***
@@ -468,15 +531,6 @@ void UKF::update_with_quaternion_model(Eigen::MatrixXd z_measurement)
     // Save posterior
     x_post = x_hat.replicate(1,1);
     P_post = P.replicate(1,1);
-
-    // Serial.println("z-measurement:");
-    // print_mtxd(z_measurement.transpose());
-
-    // Serial.println("zp:");
-    // print_mtxd(zp.transpose());
-
-    // Serial.println("y: ");
-    // print_mtxd(y.transpose());
        
 }
 
@@ -484,8 +538,13 @@ void UKF::update_with_quaternion_model(Eigen::MatrixXd z_measurement)
 void UKF::predict_with_quaternion_ang_vec_model(double dt, Eigen::VectorXd u_t)
 {
     /***
-    Predict with quaternion process model
-    u_t: Measured angular velocity as input
+    Prediction step of UKF with Quaternion + Angular Velocity model i.e state space is:
+
+    x = [q0 q1 q2 q3 omega_x omega_y omega_z].T
+
+    Inputs:
+    u_t: Commanded input to prediction step
+    dt: Delta time between updates
     ***/
     // Compute the sigma points for given mean and posteriori covariance
     Eigen::MatrixXd sigmas = sigma_points.calculate_sigma_points(x_hat, P);
@@ -513,6 +572,16 @@ void UKF::predict_with_quaternion_ang_vec_model(double dt, Eigen::VectorXd u_t)
 
 void UKF::update_with_quaternion_ang_vec_model(Eigen::MatrixXd z_measurement)
 {
+    /***
+    Update step of UKF with Quaternion + Angular Velocity model i.e state space is:
+
+    x = [q0 q1 q2 q3 omega_x omega_y omega_z].T
+    z = [z_gyro z_acc z_mag].T
+
+    Inputs:
+    z_measurement: Sensor measurements from gyroscope, accelerometer and magnetometer
+    ***/
+
     // Pass the transformed sigmas into measurement function
     for (int i = 0; i < sigma_points.num_sigma_points; i++)
     {
@@ -540,7 +609,6 @@ void UKF::update_with_quaternion_ang_vec_model(Eigen::MatrixXd z_measurement)
         Pxz = Pxz + sigma_points.Wc(i) * x_diff * z_diff.transpose();
     }
 
-
     // Compute Kalman Gain
     Eigen::VectorXd y = z_measurement - zp;
 
@@ -554,15 +622,6 @@ void UKF::update_with_quaternion_ang_vec_model(Eigen::MatrixXd z_measurement)
     // Save posterior
     x_post = x_hat.replicate(1,1);
     P_post = P.replicate(1,1);
-
-    // Serial.println("z-measurement:");
-    // print_mtxd(z_measurement.transpose());
-
-    // Serial.println("zp:");
-    // print_mtxd(zp.transpose());
-
-    // Serial.println("y: ");
-    // print_mtxd(y.transpose());
        
 }
 
@@ -573,6 +632,19 @@ std::tuple<Eigen::VectorXd, Eigen::MatrixXd> UKF::unscented_transform(Eigen::Mat
                                                                 Eigen::MatrixXd Wc,
                                                                 Eigen::MatrixXd noise_cov)
 {
+    /***
+    Computes the unscented transform from the sigma points, weighted means and weighted noise covariance.
+
+    Inputs:
+    sigmas: Sigma points of UKF
+    Wm: Weighted Mean 
+    Wc: Weighted Covariance
+    noise_cov: Noise covariance matrix
+
+    Outputs:
+    mu: Mean from unscented transform computation
+    P_cov: Covariance from unscented transform computation
+    ***/
     // Compute new mean
     Eigen::VectorXd mu = sigmas.transpose() * Wm;   // Vectorization of sum(wm_i* sigma_i)
 
@@ -594,28 +666,22 @@ std::tuple<Eigen::VectorXd, Eigen::MatrixXd> UKF::unscented_transform(Eigen::Mat
 }
 
 /*** Nonlinear Functions ***/
+// --- Process & Measurement Model with Quaternion and gyroscope biases ---
 // Process Model
-Eigen::VectorXd UKF::f(Eigen::VectorXd x, double dt)
-{
-    // TODO: Implement
-    Eigen::VectorXd transformed_sigmas;
-    return x;
-}
-
-// Measurement Model
-Eigen::VectorXd UKF::h(Eigen::VectorXd x)
-{
-    // TODO: Implement
-    Eigen::VectorXd transformed_sigmas;
-    return x;
-}
-
-
-// --- Process Model with Quaternion ---
-// ## Quaternion with bias gyroscope model
 Eigen::VectorXd UKF::f_quaternion(Eigen::VectorXd x, Eigen::VectorXd u_t, double dt)
 {
-    // Extract quaternion from current state estimates
+    /***
+    Nonlinear process model for Orientation estimation with Quaternions 
+
+    Inputs:
+    x: current sigma point of state estimate x = [q0 q1 q2 q3 bias_x bias_y bias_z].T
+    u_t: Current input to nonlinear process model
+    dt: delta time
+
+    Outputs:
+    predicted_sigmas: sigma points after being propagated through nonlinear process model
+    ***/ 
+    // Extract quaternion from current state estimates (q0,q1,q2,q3)
     UnitQuaternion attitude(x(0), 
                             x(1),
                             x(2),
@@ -647,10 +713,20 @@ Eigen::VectorXd UKF::f_quaternion(Eigen::VectorXd x, Eigen::VectorXd u_t, double
     return predicted_sigma;
 }
 
+// Measurement Model
 Eigen::VectorXd UKF::h_quaternion(Eigen::VectorXd x)
 {
+    /***
+    Nonlinear measurement model for Orientation estimation with Quaternions
+
+    Inputs:
+    x: current sigma point of state estimate x = [q0 q1 q2 q3 bias_x bias_y bias_z].T
+
+    Outputs:
+    z_pred_sigma: sigma point after being propagated through nonlinear measurement model
+    ***/ 
     // --- Measurement model ---
-    // Extract quaternion from current state estimates
+    // Extract quaternion from current state estimates (q0,q1,q2,q3)
     UnitQuaternion attitude(x(0), 
                             x(1),
                             x(2),
@@ -673,9 +749,21 @@ Eigen::VectorXd UKF::h_quaternion(Eigen::VectorXd x)
 }
 
 
-// ## Quaternion with ang vec model
+// --- Process & Measurement Model with Quaternion and angular velocity ---
+// Process Model
 Eigen::VectorXd UKF::f_quaternion_ang_vec_model(Eigen::VectorXd x, double dt)
 {
+    /***
+    Nonlinear process model for Orientation estimation with Quaternions 
+
+    Inputs:
+    x: current sigma point of state estimate x = [q0 q1 q2 q3 omega_x omega_y omega_z].T
+    u_t: Current input to nonlinear process model
+    dt: delta time
+
+    Outputs:
+    predicted_sigmas: sigma points after being propagated through nonlinear process model
+    ***/ 
     // State space x = [q0 q1 q2 q3 omega_x, omega_y, omega_z].T
     // Extract quaternion from current state estimates
     UnitQuaternion attitude(x(0), 
@@ -709,9 +797,18 @@ Eigen::VectorXd UKF::f_quaternion_ang_vec_model(Eigen::VectorXd x, double dt)
     return predicted_sigma;
 }
 
-
+// Measurement Model
 Eigen::VectorXd UKF::h_quaternion_ang_vec_model(Eigen::VectorXd x)
 {
+    /***
+    Nonlinear measurement model for Orientation estimation with Quaternions
+
+    Inputs:
+    x: current sigma point of state estimate x = [q0 q1 q2 q3 omega_x omega_y omega_z].T
+
+    Outputs:
+    z_pred_sigma: sigma point after being propagated through nonlinear measurement model
+    ***/ 
     // --- Measurement model ---
     // Extract quaternion from current state estimates
     UnitQuaternion attitude(x(0), 
@@ -743,6 +840,11 @@ Eigen::VectorXd UKF::h_quaternion_ang_vec_model(Eigen::VectorXd x)
 // --- Radar example (Used for testing) ---
 Eigen::VectorXd UKF::f_cv_radar(Eigen::VectorXd x, double dt)
 {
+    /***
+    Nonlinear process model for Radar Example
+    (Note: This is used for testing UKF when coding it!) 
+    ***/ 
+
     Eigen::MatrixXd F_mat(4,4);
     F_mat << 1, dt, 0, 0,
         0, 1, 0, 0,
@@ -755,6 +857,10 @@ Eigen::VectorXd UKF::f_cv_radar(Eigen::VectorXd x, double dt)
 
 Eigen::VectorXd UKF::h_radar(Eigen::VectorXd x)
 {
+    /***
+    Nonlinear measurement model for Radar Example
+    (Note: This is used for testing UKF when coding it!) 
+    ***/     
     double dx = x(0) - 0;
     double dy = x(2) - 0;
 
@@ -770,6 +876,9 @@ Eigen::VectorXd UKF::h_radar(Eigen::VectorXd x)
 /*** Arduino Debugging ***/
 void UKF::debug()
 {
+    /***
+    Debugging Unscented Kalman Filter to Arduino Serial
+    ***/
     Serial.println("------- Debugging UKF -------");
     /*** State Space ***/
     Serial.println("x_hat:");

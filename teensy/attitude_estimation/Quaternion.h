@@ -6,7 +6,6 @@
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/Cholesky>
-#include "BasicLinearAlgebra.h"
 
 #include <vector> 
 #include <math.h>
@@ -19,7 +18,6 @@ public:
 
 	// Orthogonal complex number (vector part of Quaternion) 
 	float v_1, v_2, v_3;
-	//vector<float> v;
 
 	Quaternion();
 	Quaternion(float s, float v_1, float v_2, float v_3);
@@ -49,8 +47,6 @@ public:
 	float get_roll();
 	float get_pitch();
 	float get_yaw();
-
-	BLA::Matrix<3> to_rpy();
 
 	/*** To vector method ***/
 	Eigen::Vector4d to_quaternion_vector();

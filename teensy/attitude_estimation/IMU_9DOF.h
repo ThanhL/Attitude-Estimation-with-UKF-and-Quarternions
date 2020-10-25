@@ -12,7 +12,6 @@ LSM6DS33 LIS3MDL 9DOF IMU Wrapper
 #define LIS3MDL_I2C_ADDR 0x1E
 
 
-
 // --- Imu Data ---
 typedef struct 
 {

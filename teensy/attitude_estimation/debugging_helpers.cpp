@@ -3,6 +3,9 @@
 
 void print_mtxf(const Eigen::MatrixXf& X) 
 {
+	/***
+	Prints the matrix/vector of type float to Arduino Serial
+	***/
 	int nrow = X.rows();
 	int ncol = X.cols();
 
@@ -22,6 +25,9 @@ void print_mtxf(const Eigen::MatrixXf& X)
 
 void print_mtxd(const Eigen::MatrixXd& X) 
 {
+	/***
+	Prints the matrix/vector of type double to Arduino Serial
+	***/
 	int nrow = X.rows();
 	int ncol = X.cols();
 

@@ -17,6 +17,9 @@ IMU_9DOF::~IMU_9DOF()
 
 void IMU_9DOF::init_sensors_i2c(void)
 {
+    /***
+    Initializes the LSM6DS33 & LIS3MDL over I2C.
+    ***/    
     while (!lsm6ds.begin_I2C(LSM6DS33_I2C_ADDR))
     {
         Serial.println("Failed to find LSM6DS chip. Retrying...");
@@ -33,6 +36,9 @@ void IMU_9DOF::init_sensors_i2c(void)
 
 void IMU_9DOF::get_accelerometer_settings(void)
 {
+    /***
+    Outputs the current accelerometer settings
+    ***/ 
     Serial.print("Accelerometer range set to: ");
     switch (lsm6ds.getAccelRange()) 
     {
@@ -92,6 +98,9 @@ void IMU_9DOF::get_accelerometer_settings(void)
 
 void IMU_9DOF::get_gyroscope_settings(void)
 {
+    /***
+    Outputs the current gyroscope settings
+    ***/        
     Serial.print("Gyro range set to: ");
     switch (lsm6ds.getGyroRange()) 
     {
@@ -156,6 +165,9 @@ void IMU_9DOF::get_gyroscope_settings(void)
 
 void IMU_9DOF::get_magnetometer_settings(void)
 {
+    /***
+    Outputs the current magnetometer settings
+    ***/       
     Serial.print("Magnetometer data rate set to: ");
     switch (lis3mdl.getDataRate()) 
     {

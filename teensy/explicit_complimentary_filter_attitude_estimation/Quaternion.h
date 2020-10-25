@@ -44,8 +44,6 @@ public:
 	float get_pitch();
 	float get_yaw();
 
-	BLA::Matrix<3> to_rpy();
-
 	/*** To vector method ***/
 	BLA::Matrix<4> to_vector();
 };
