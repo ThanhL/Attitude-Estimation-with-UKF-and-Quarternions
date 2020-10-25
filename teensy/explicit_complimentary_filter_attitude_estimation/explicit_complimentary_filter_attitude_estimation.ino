@@ -16,6 +16,14 @@ using namespace BLA;
 #define DECLINATION 11.4017 * (PI/180.0)       // Declination Angle (rads)
 #define B_INTENSITY 21951.5e-9                 // Magnetic Field Intensity (Tesla)
 
+// Hard Iron offets (uT)
+// These values were calculated using magnetometer calibration steps from jupyter notebook
+// on adafruit's website: 
+// https://learn.adafruit.com/adafruit-sensorlab-magnetometer-calibration/magnetic-calibration-with-motioncal
+const float mag_hardiron_offset_x = -31.71;
+const float mag_hardiron_offset_y = 28.61;
+const float mag_hardiron_offset_z = 33.985;
+
 // --- IMU Global ---
 IMU_9DOF imu_9dof;
 imu_data_t imu_data;
@@ -167,9 +175,10 @@ void loop()
                     gyro.gyro.z};
 
     // Magnetometer (Tesla)
-    mag_measurement = {mag.magnetic.x * 1e-6,
-                    mag.magnetic.y * 1e-6,
-                    mag.magnetic.z * 1e-6};
+    mag_measurement = {(mag.magnetic.x - mag_hardiron_offset_x) * 1e-6,
+                    (mag.magnetic.y - mag_hardiron_offset_y) * 1e-6,
+                    (mag.magnetic.z - mag_hardiron_offset_z) * 1e-6 };
+
 
     // Calculate time difference
     float dt = calculate_delta_time();

@@ -241,7 +241,8 @@ UKF::UKF(MerwedSigmaPoints merwed_sigma_points)
     // Initialize noise matrices
     Q = Eigen::MatrixXd::Identity(x_dim, x_dim) * 0.001;
 
-    R = Eigen::MatrixXd::Identity(z_dim, z_dim) * 0.1;
+    //R = Eigen::MatrixXd::Identity(z_dim, z_dim) * 0.1;
+    R = Eigen::MatrixXd::Identity(z_dim, z_dim) * 0.5;
 
     // Intialize inertial frame quantities
     g0 << 0, 0, 1;

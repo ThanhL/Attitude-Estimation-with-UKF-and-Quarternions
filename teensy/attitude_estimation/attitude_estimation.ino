@@ -31,6 +31,19 @@ Eigen::Vector3d initial_acc_measurement(0.0, 0.0, 0.0);
 Eigen::Vector3d initial_gyro_measurement(0.0, 0.0, 0.0);
 Eigen::Vector3d initial_mag_measurement(0.0, 0.0, 0.0);
 
+// const double mag_hardiron_offset_x = 102.14;
+// const double mag_hardiron_offset_y = -120.37;
+// const double mag_hardiron_offset_z = 267.32;
+
+// Hard Iron offets (uT)
+// These values were calculated using magnetometer calibration steps from jupyter notebook
+// on adafruit's website: 
+// https://learn.adafruit.com/adafruit-sensorlab-magnetometer-calibration/magnetic-calibration-with-motioncal
+const float mag_hardiron_offset_x = -31.71;
+const float mag_hardiron_offset_y = 28.61;
+const float mag_hardiron_offset_z = 33.985;
+
+
 // --- Unscented Kalman Filter 
 /*** sigma points ***/
 const int n_state_dim = 7;
@@ -146,9 +159,9 @@ void loop()
                     gyro.gyro.z;
 
     // Magnetometer (Tesla)
-    mag_measurement << mag.magnetic.x * 1e-6,
-                    mag.magnetic.y * 1e-6,
-                    mag.magnetic.z * 1e-6;
+    mag_measurement << (mag.magnetic.x - mag_hardiron_offset_x) * 1e-6,
+                    (mag.magnetic.y - mag_hardiron_offset_y) * 1e-6,
+                    (mag.magnetic.z - mag_hardiron_offset_z) * 1e-6;
 
     // Calculate time difference
     float dt = calculate_delta_time();
@@ -168,6 +181,9 @@ void loop()
     // Update UKF with measurements 
     quat_ukf.update_with_quaternion_model(z_measurement);
 
+    // if (quat_ukf.x_hat(0) > 1 or quat_ukf.x_hat(0) < -1)
+    //     quat_ukf.x_hat(0) = copysign(1, quat_ukf.x_hat(0));
+
     // --- Output to Serial ---
     //print_mtxd(quat_ukf.x_hat.transpose());
 
@@ -179,7 +195,16 @@ void loop()
     Serial.print(quat_ukf.x_hat(2));
     Serial.print("\t");  
     Serial.print(quat_ukf.x_hat(3));
-    Serial.print("\t");  
+    Serial.print("\t"); 
+
+    // Serial.print(quat_ukf.x_hat(4));
+    // Serial.print("\t"); 
+    // Serial.print(quat_ukf.x_hat(5));
+    // Serial.print("\t"); 
+    // Serial.print(quat_ukf.x_hat(6));
+    // Serial.print("\t"); 
+
+
     Serial.println();
 }
 
