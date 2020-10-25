@@ -216,10 +216,14 @@ UKF::UKF(MerwedSigmaPoints merwed_sigma_points)
     x_hat = Eigen::VectorXd::Zero(x_dim);
     x_hat << 1, 0, 0, 0, 0, 0, 0;   // Initial Quaterion: 1+0i+0j+0k and initial ang vel: [0 0 0].T
  
-    // Initialize z state vector
-    z_dim = 6;
+    // // Initialize z state vector
+    // z_dim = 6;
+    // z = Eigen::VectorXd::Zero(z_dim);
+    // z << 0, 0, 0, 0, 0, 0;                   // Initial measurement in frame {B}, [z_acc, z_mag].T
+
+    // TODO: TEST NEW SS MODEL
+    z_dim = 9;
     z = Eigen::VectorXd::Zero(z_dim);
-    z << 0, 0, 0;                   // Initial measurement in frame {B}, [z_acc, z_mag].T
 
     // Intialize Posteriori Estimate Covariance Matrix
     P = Eigen::MatrixXd::Zero(x_dim, x_dim);
@@ -243,6 +247,12 @@ UKF::UKF(MerwedSigmaPoints merwed_sigma_points)
 
     //R = Eigen::MatrixXd::Identity(z_dim, z_dim) * 0.1;
     R = Eigen::MatrixXd::Identity(z_dim, z_dim) * 0.5;
+
+    R(0,0) = 5;
+    R(1,1) = 5;
+    R(2,2) = 5;
+
+
 
     // Intialize inertial frame quantities
     g0 << 0, 0, 1;
@@ -470,6 +480,92 @@ void UKF::update_with_quaternion_model(Eigen::MatrixXd z_measurement)
        
 }
 
+// --- Quaternion Ang Vec Model ---
+void UKF::predict_with_quaternion_ang_vec_model(double dt, Eigen::VectorXd u_t)
+{
+    /***
+    Predict with quaternion process model
+    u_t: Measured angular velocity as input
+    ***/
+    // Compute the sigma points for given mean and posteriori covariance
+    Eigen::MatrixXd sigmas = sigma_points.calculate_sigma_points(x_hat, P);
+    
+    // Pass sigmas into f(x)
+    for (int i = 0; i < sigma_points.num_sigma_points; i++)
+    {
+        // Predict with quaternion process model for sigma points
+        sigmas_f.row(i) = f_quaternion_ang_vec_model(sigmas.row(i), dt);
+
+    }
+
+
+    // Compute unscented mean and covariance
+    std::tie(x_hat, P) = unscented_transform(sigmas_f,
+                                        sigma_points.Wm,
+                                        sigma_points.Wc,
+                                        Q);
+
+    // Save prior
+    x_prior = x_hat.replicate(1,1);
+    P_prior = P.replicate(1,1); 
+
+}
+
+void UKF::update_with_quaternion_ang_vec_model(Eigen::MatrixXd z_measurement)
+{
+    // Pass the transformed sigmas into measurement function
+    for (int i = 0; i < sigma_points.num_sigma_points; i++)
+    {
+        // Update sigmas with measurement model
+        sigmas_h.row(i) = h_quaternion_ang_vec_model(sigmas_f.row(i));
+    }
+
+    // Compute mean and covariance using unscented transform
+    Eigen::VectorXd zp;
+    Eigen::MatrixXd Pz;
+
+    std::tie(zp, Pz) = unscented_transform(sigmas_h,
+                                        sigma_points.Wm,
+                                        sigma_points.Wc,
+                                        R);
+
+    // Compute cross variance of state and measurements
+    Eigen::MatrixXd Pxz = Eigen::MatrixXd::Zero(x_dim, z_dim);
+
+    for (int i = 0; i < sigma_points.num_sigma_points; i++)
+    {
+        Eigen::VectorXd x_diff = sigmas_f.row(i) - x_prior.transpose();
+        Eigen::VectorXd z_diff = sigmas_h.row(i) - zp.transpose();
+
+        Pxz = Pxz + sigma_points.Wc(i) * x_diff * z_diff.transpose();
+    }
+
+
+    // Compute Kalman Gain
+    Eigen::VectorXd y = z_measurement - zp;
+
+    Eigen::MatrixXd Pz_inv = Pz.inverse();
+    Eigen::MatrixXd K = Pxz * Pz_inv;
+
+    // Update with Kalman Gains
+    x_hat = x_prior + K * y;
+    P = P_prior - K * Pz * K.transpose();
+
+    // Save posterior
+    x_post = x_hat.replicate(1,1);
+    P_post = P.replicate(1,1);
+
+    // Serial.println("z-measurement:");
+    // print_mtxd(z_measurement.transpose());
+
+    // Serial.println("zp:");
+    // print_mtxd(zp.transpose());
+
+    // Serial.println("y: ");
+    // print_mtxd(y.transpose());
+       
+}
+
 
 // --- Unscented Transform ---
 std::tuple<Eigen::VectorXd, Eigen::MatrixXd> UKF::unscented_transform(Eigen::MatrixXd sigmas,
@@ -516,6 +612,7 @@ Eigen::VectorXd UKF::h(Eigen::VectorXd x)
 
 
 // --- Process Model with Quaternion ---
+// ## Quaternion with bias gyroscope model
 Eigen::VectorXd UKF::f_quaternion(Eigen::VectorXd x, Eigen::VectorXd u_t, double dt)
 {
     // Extract quaternion from current state estimates
@@ -575,6 +672,73 @@ Eigen::VectorXd UKF::h_quaternion(Eigen::VectorXd x)
     return z_pred_sigma;
 }
 
+
+// ## Quaternion with ang vec model
+Eigen::VectorXd UKF::f_quaternion_ang_vec_model(Eigen::VectorXd x, double dt)
+{
+    // State space x = [q0 q1 q2 q3 omega_x, omega_y, omega_z].T
+    // Extract quaternion from current state estimates
+    UnitQuaternion attitude(x(0), 
+                            x(1),
+                            x(2),
+                            x(3));
+
+
+    // Estimated attitude update with incremental rotation update
+    // EQN 3.26 & EQN 3.17 (Exponential with skew matrix and delta_t)
+    UnitQuaternion uq_omega = UnitQuaternion::omega(x(4)*dt, 
+                                                x(5)*dt, 
+                                                x(6)*dt);
+    attitude = attitude * uq_omega;
+
+    // Update the state space on sigmas
+    Eigen::VectorXd predicted_sigma(7);
+
+
+    // Quaternions
+    predicted_sigma(0) = attitude.s;
+    predicted_sigma(1) = attitude.v_1;
+    predicted_sigma(2) = attitude.v_2;
+    predicted_sigma(3) = attitude.v_3;
+    
+    // Angular velocity
+    predicted_sigma(4) = x(4);
+    predicted_sigma(5) = x(5);
+    predicted_sigma(6) = x(6);
+
+    return predicted_sigma;
+}
+
+
+Eigen::VectorXd UKF::h_quaternion_ang_vec_model(Eigen::VectorXd x)
+{
+    // --- Measurement model ---
+    // Extract quaternion from current state estimates
+    UnitQuaternion attitude(x(0), 
+                            x(1),
+                            x(2),
+                            x(3));
+
+    // Inverse: {B} to {0}
+    UnitQuaternion invq = attitude.inverse();
+
+    // Accelerometer
+    Eigen::VectorXd acc_pred = invq.vector_rotation_by_quaternion(g0);
+
+    // Magnetomer
+    Eigen::VectorXd mag_pred = invq.vector_rotation_by_quaternion(m0);
+
+
+    // Gyroscope
+    Eigen::VectorXd gyro_pred(3);
+    gyro_pred << x(4), x(5), x(6);
+
+    // Z prediction
+    Eigen::VectorXd z_pred_sigma(gyro_pred.size() + acc_pred.size() + mag_pred.size());
+    z_pred_sigma << gyro_pred, acc_pred, mag_pred; 
+
+    return z_pred_sigma;
+}
 
 // --- Radar example (Used for testing) ---
 Eigen::VectorXd UKF::f_cv_radar(Eigen::VectorXd x, double dt)

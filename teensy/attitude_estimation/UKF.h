@@ -130,9 +130,11 @@ public:
 	/*** Prediction + Update Steps ***/
 	void predict(double dt);
 	void predict_with_quaternion_model(double dt, Eigen::VectorXd u_t);
+	void predict_with_quaternion_ang_vec_model(double dt, Eigen::VectorXd u_t);
 
 	void update(Eigen::MatrixXd z_measurement);
 	void update_with_quaternion_model(Eigen::MatrixXd z_measurement);
+	void update_with_quaternion_ang_vec_model(Eigen::MatrixXd z_measurement);
 
 	std::tuple<Eigen::VectorXd, Eigen::MatrixXd> unscented_transform(Eigen::MatrixXd sigmas,
 																	Eigen::MatrixXd Wm,
@@ -145,6 +147,9 @@ public:
 
 	Eigen::VectorXd f_quaternion(Eigen::VectorXd x, Eigen::VectorXd u_t, double dt);
 	Eigen::VectorXd h_quaternion(Eigen::VectorXd x);
+
+	Eigen::VectorXd f_quaternion_ang_vec_model(Eigen::VectorXd x, double dt);
+	Eigen::VectorXd h_quaternion_ang_vec_model(Eigen::VectorXd x);
 
 	// Dummy nonlinear functions for testing
 	Eigen::VectorXd f_cv_radar(Eigen::VectorXd x, double dt);

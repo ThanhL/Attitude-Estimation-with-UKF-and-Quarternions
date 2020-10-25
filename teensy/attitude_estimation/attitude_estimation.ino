@@ -43,6 +43,13 @@ const float mag_hardiron_offset_x = -31.71;
 const float mag_hardiron_offset_y = 28.61;
 const float mag_hardiron_offset_z = 33.985;
 
+// Gryroscope offesets (rad/s)
+// These values were calculated using gyroscope calibration steps from jupyter notebook
+// on adafruit's website: 
+// https://learn.adafruit.com/adafruit-sensorlab-gyroscope-calibration
+const float gyro_offset_x = 0.06285;
+const float gyro_offset_y = -0.08785;;
+const float gyro_offset_z = -0.06815;;
 
 // --- Unscented Kalman Filter 
 /*** sigma points ***/
@@ -106,35 +113,12 @@ void setup()
     // --- Output the current settings by 9DOF IMU ---
     imu_9dof.get_accelerometer_settings();
     imu_9dof.get_gyroscope_settings();
-    imu_9dof.get_magnetometer_settings();    
+    imu_9dof.get_magnetometer_settings();   
 
-    // --- Testing UKF ---
+
+    // --- Debug UKF before the main execution ---
     quat_ukf.debug();
 
-    // // --- Testing Quaternion UKF after one prediction ----
-    // Eigen::VectorXd ang_vec_dummy(3);
-    // ang_vec_dummy << 0.0, 0.0, 0.0;
-
-    // quat_ukf.predict_with_quaternion_model(3.0, ang_vec_dummy);
-
-    // Serial.println("Quat UKF x_prior after one predict: ");
-    // print_mtxd(quat_ukf.x_prior.transpose());
-
-    // Serial.println("Quat UKF P_prior after one predict: ");
-    // print_mtxd(quat_ukf.P_prior);
-
-    // // Running after one update
-    // Eigen::VectorXd z_dummy_time_0(6);     // Dummy measurement @ time t=0
-    // z_dummy_time_0 << 0, 0, 1, 0, 0, 0;
-
-    // quat_ukf.update(z_dummy_time_0);
-
-    // Serial.println("Custom UKF x_post after one update: ");
-    // print_mtxd(quat_ukf.x_post.transpose());
-
-    // Serial.println("Custom UKF P_post after one update: ");
-    // print_mtxd(quat_ukf.P_post);
- 
 }   
 
 void loop() 
@@ -154,9 +138,9 @@ void loop()
                     accel.acceleration.z;
 
     // Gyro (rad/s)
-    gyro_measurement << gyro.gyro.x,
-                    gyro.gyro.y,
-                    gyro.gyro.z;
+    gyro_measurement << gyro.gyro.x - gyro_offset_x,
+                    gyro.gyro.y - gyro_offset_y,
+                    gyro.gyro.z - gyro_offset_z;
 
     // Magnetometer (Tesla)
     mag_measurement << (mag.magnetic.x - mag_hardiron_offset_x) * 1e-6,
@@ -167,22 +151,28 @@ void loop()
     float dt = calculate_delta_time();
 
     // --- Calculate Roll, pitch, yaw  
-    // print_mtxd(acc_measurement.transpose());
-    // print_mtxd(gyro_measurement.transpose());
-    // print_mtxd(mag_measurement.transpose());
+    // // Quaternion with bias model
+    // // Predict with UKF
+    // quat_ukf.predict_with_quaternion_model(dt, gyro_measurement);
 
+    // // Cocantenate accelerometer and magnetometer for measurement
+    // Eigen::VectorXd z_measurement(acc_measurement.size() + mag_measurement.size());
+    // z_measurement << acc_measurement, mag_measurement;
+
+    // // Update UKF with measurements 
+    // quat_ukf.update_with_quaternion_model(z_measurement);
+
+
+    // Quaternion with ang vec model
     // Predict with UKF
-    quat_ukf.predict_with_quaternion_model(dt, gyro_measurement);
+    quat_ukf.predict_with_quaternion_ang_vec_model(dt, gyro_measurement);
 
     // Cocantenate accelerometer and magnetometer for measurement
-    Eigen::VectorXd z_measurement(acc_measurement.size() + mag_measurement.size());
-    z_measurement << acc_measurement, mag_measurement;
+    Eigen::VectorXd z_measurement(gyro_measurement.size() + acc_measurement.size() + mag_measurement.size());
+    z_measurement << gyro_measurement, acc_measurement, mag_measurement;
 
     // Update UKF with measurements 
-    quat_ukf.update_with_quaternion_model(z_measurement);
-
-    // if (quat_ukf.x_hat(0) > 1 or quat_ukf.x_hat(0) < -1)
-    //     quat_ukf.x_hat(0) = copysign(1, quat_ukf.x_hat(0));
+    quat_ukf.update_with_quaternion_ang_vec_model(z_measurement);
 
     // --- Output to Serial ---
     //print_mtxd(quat_ukf.x_hat.transpose());

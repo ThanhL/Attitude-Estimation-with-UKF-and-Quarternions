@@ -24,6 +24,15 @@ const float mag_hardiron_offset_x = -31.71;
 const float mag_hardiron_offset_y = 28.61;
 const float mag_hardiron_offset_z = 33.985;
 
+// Gryroscope offesets (rad/s)
+// These values were calculated using gyroscope calibration steps from jupyter notebook
+// on adafruit's website: 
+// https://learn.adafruit.com/adafruit-sensorlab-gyroscope-calibration
+const float gyro_offset_x = 0.06285;
+const float gyro_offset_y = -0.08785;;
+const float gyro_offset_z = -0.06815;;
+
+
 // --- IMU Global ---
 IMU_9DOF imu_9dof;
 imu_data_t imu_data;
@@ -33,10 +42,6 @@ BLA::Matrix<3> acc_measurement;
 BLA::Matrix<3> gyro_measurement;
 BLA::Matrix<3> mag_measurement;
 
-// Initial measurements
-BLA::Matrix<3> initial_acc_measurement = {0.0, 0.0, 0.0};
-BLA::Matrix<3> initial_gyro_measurement = {0.0, 0.0, 0.0};
-BLA::Matrix<3> initial_mag_measurement = {0.0, 0.0, 0.0};
 
 // --- Explicit Comp Filter
 const float kI = 0.2;
@@ -100,57 +105,6 @@ void setup()
     imu_9dof.get_gyroscope_settings();
     imu_9dof.get_magnetometer_settings();    
 
-    // --- Grab initial Readings ---
-    // Create sensors_event_t in memory to hold accel, gyro, mag and temp readings
-    sensors_event_t accel, gyro, mag, temp;
-
-    // Get new readings from 9DOF IMU
-    imu_9dof.lsm6ds.getEvent(&accel, &gyro, &temp);
-    imu_9dof.lis3mdl.getEvent(&mag);
-
-    // Accelerometer (m/s^2)
-    initial_acc_measurement = {accel.acceleration.x, 
-                            accel.acceleration.y, 
-                            accel.acceleration.z};
-
-
-    // Gyro (rad/s)
-    initial_gyro_measurement = {gyro.gyro.x,
-                            gyro.gyro.y,
-                            gyro.gyro.z};
-
-    // Magnetometer (Tesla)
-    initial_mag_measurement = {mag.magnetic.x * 1e-6,
-                            mag.magnetic.y * 1e-6,
-                            mag.magnetic.z * 1e-6};
-
-
-    for (int i=0; i < 100; i++)
-    {
-        // Create sensors_event_t in memory to hold accel, gyro, mag and temp readings
-        sensors_event_t accel, gyro, mag, temp;
-
-        // Get new readings from 9DOF IMU
-        imu_9dof.lsm6ds.getEvent(&accel, &gyro, &temp);
-        imu_9dof.lis3mdl.getEvent(&mag);
-
-        // Accelerometer (m/s^2)
-        initial_acc_measurement(0) += accel.acceleration.x;
-        initial_acc_measurement(1) += accel.acceleration.y;
-        initial_acc_measurement(2) += accel.acceleration.z;
-
-        // Gyro (rad/s)
-        initial_gyro_measurement(0) += gyro.gyro.x;
-        initial_gyro_measurement(1) += gyro.gyro.y;
-        initial_gyro_measurement(2) += gyro.gyro.z;
-        
-    }
-
-    initial_acc_measurement /= 100;
-    initial_gyro_measurement /= 100;
-
-    Serial << "initial_acc_measurement: " << initial_acc_measurement << "\n";
-    Serial << "initial_gyro_measurement: " << initial_gyro_measurement << "\n";
 }   
 
 void loop() 
@@ -170,9 +124,9 @@ void loop()
                     accel.acceleration.z};
 
     // Gyro (rad/s)
-    gyro_measurement = {gyro.gyro.x,
-                    gyro.gyro.y,
-                    gyro.gyro.z};
+    gyro_measurement = {gyro.gyro.x - gyro_offset_x,
+                    gyro.gyro.y - gyro_offset_y,
+                    gyro.gyro.z - gyro_offset_z};
 
     // Magnetometer (Tesla)
     mag_measurement = {(mag.magnetic.x - mag_hardiron_offset_x) * 1e-6,
