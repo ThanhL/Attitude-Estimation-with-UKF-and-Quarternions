@@ -67,7 +67,7 @@ Once the quaternion elements are verified to be outputting to Serial, we can now
 
 ### Unscented Kalman Filter Process/Measurement Models
 
-The Unscented Kalman Filter largely follows the process model and measurement model from Edgar Kraft's *A Quaternion-based Unscented Kalman Filter for Orientation Tracking* paper. More details about UKF process+measurement model can be found in the Jupyter Notebook [here](https://www.gooogle.com).
+The Unscented Kalman Filter largely follows the process model and measurement model from Edgar Kraft's *A Quaternion-based Unscented Kalman Filter for Orientation Tracking* paper. More details about UKF process+measurement model can be found in the Jupyter Notebook [here](https://github.com/ThanhL/Attitude-Estimation-with-UKF-and-Quarternions/blob/master/Notebooks/Unscented%20Kalman%20Filter%20Orientation%20Estimation%20Math.ipynb) (located in the Notebooks folder of this repo).
 
 
 ### Possible Improvements
