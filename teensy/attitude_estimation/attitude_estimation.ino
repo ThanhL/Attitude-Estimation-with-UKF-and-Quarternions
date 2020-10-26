@@ -162,7 +162,7 @@ void loop()
     Serial.print(quat_ukf.x_hat(3));
     Serial.print("\t"); 
 
-    // Angular Velocity states
+    // Angular Velocity states (uncomment these if you want to see the remaining states)
     // Serial.print(quat_ukf.x_hat(4));
     // Serial.print("\t"); 
     // Serial.print(quat_ukf.x_hat(5));
