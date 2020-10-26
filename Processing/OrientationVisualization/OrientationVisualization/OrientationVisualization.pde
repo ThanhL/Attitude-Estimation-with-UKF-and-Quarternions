@@ -1,6 +1,11 @@
 /*
-    Arduino and ADXL345 Accelerometer - 3D Visualization Example 
-     by Dejan, https://howtomechatronics.com
+    Quaternion Unscented Kalman Filter Orientation Visualization
+    
+    Modified from Dejan's 3D Visualization Example https://howtomechatronics.com
+    - Processing script now reads quaternions instead of roll, pitch, yaw
+    - Rotations are applied from the quaternions read using applyMatrix() instead of rotate function
+    - Using unscented kalman filters for orientation estimation with quaternions instead of euler coordinates
+    
 */
 // --- Libraries ---
 import processing.serial.*;
@@ -11,7 +16,6 @@ import java.io.IOException;
 // --- Teensy Attitude Estimation ---
 Serial teensy_port;
 String data="";
-float roll, pitch, yaw;
 float qw, qx, qy, qz;
 
 // --- Apply Quaternion Rotation ---
@@ -49,12 +53,6 @@ void apply_quaternion_rotation(float qw, float qx, float qy, float qz)
 // --- Processing main ---
 void setup() 
 {
-  //size (960, 640, P3D);
-  //// --- STL import ---
-  //mesh=(TriangleMesh)new STLReader().loadBinary(sketchPath("rocket.stl"),STLReader.TRIANGLEMESH);
-  ////mesh=(TriangleMesh)new STLReader().loadBinary(sketchPath("mesh-flipped.stl"),STLReader.TRIANGLEMESH).flipYAxis();
-  //gfx=new ToxiclibsSupport(this);
-  
   // Define dimensions of the processing visualization
   size (960, 640, P3D);
 

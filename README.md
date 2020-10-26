@@ -4,7 +4,7 @@
 
 This repository covers an attitude estimation system with the use of quaternions and Unscented Kalman Filters. This project using the LIS3MDL+LSM6DS33 sensor module that provides accelerometer, gyroscope and magnetometer data. The code can be uploaded to a Teensy/Arduino which does the Unscented Kalman Filter calculations onboard the microcontroller and prints the quaternion results to Serial.
 
-To visualize the quaternion, a Processing sketch was developed (located in the Processing folder). The sketch reads the quaternion data from USB serial outputted by the Teensy/Arduino and then applies the rotation onto an object for visualization as shown:
+To visualize the quaternion, a Processing sketch was developed (OrientationVisualization.pde located in the Processing folder). The sketch reads the quaternion data from USB serial outputted by the Teensy/Arduino and then applies the rotation onto an object for visualization as shown:
 
 *** Insert Video ***
 
@@ -19,9 +19,10 @@ The following code was tested/developed with the following hardware:
 
 #### Wiring it up!
 
-For this project we just need to connect the IMU to teensy over I2C as shown in the schematic below. The Serial communications + Power would just come from the USB port! 
+For this project we just need to connect the IMU to teensy over I2C (SDA, SDC pins of the IMU to SDA,SDC pins of the Teensy/Ardunio). The Serial communications + Power would just come from the USB port! 
 
-*** Insert Wiring Diagram ***
+![Image of Teensy+IMU](/images/Teensy_with_9DOF_IMU_Annotated.png)
+
 
 ### Library Dependencies
 
@@ -82,7 +83,7 @@ The Unscented Kalman Filter largely follows the process model and measurement mo
 
 `Improve Process/Measurement Models and Sigma Points:` We could potentially improve the process model/measurement model to include more states such as biases from accelerometer/angular velocity/magnetometer. We could also tune the parameters of merwe sigma points (alpha, beta, kappa) to potentially improve the UKF.
 
-`Smooth Orientation Estimation:` The UKF orientation is able to track the orientation pretty well, however the estimations outputted aren't quite smooth as they vary quite a bit around steady state estimates (hence the jerky motion). A Kalman smoother can be added to improve tracking of the Kalman filters, enabling a smoother steady state + smoother transitions from state estimates.
+`Kalman Smoother:` The UKF orientation is able to track the orientation pretty well, however the estimations outputted aren't quite smooth as they vary quite a bit around steady state estimates (hence the jerky motion). A Kalman smoother can be added to improve tracking of the Kalman filters, enabling a smoother steady state + smoother transitions from state estimates.
 
 ## References
 [1] Merwe, Rudolph., Wan, Eric. *Sigma-Point Kalman Filters for ProbabilisticInference in Dynamic State-Space Models*, 2004.
