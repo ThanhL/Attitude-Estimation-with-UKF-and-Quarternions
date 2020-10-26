@@ -82,7 +82,7 @@ The Unscented Kalman Filter largely follows the process model and measurement mo
 
 `Improve Process/Measurement Models and Sigma Points:` We could potentially improve the process model/measurement model to include more states such as biases from accelerometer/angular velocity/magnetometer. We could also tune the parameters of merwe sigma points (alpha, beta, kappa) to potentially improve the UKF.
 
-
+`Smooth Orientation Estimation:` The UKF orientation is able to track the orientation pretty well, however the estimations outputted aren't quite smooth as they vary quite a bit around steady state estimates (hence the jerky motion). A Kalman smoother can be added to improve tracking of the Kalman filters, enabling a smoother steady state + smoother transitions from state estimates.
 
 ## References
 [1] Merwe, Rudolph., Wan, Eric. *Sigma-Point Kalman Filters for ProbabilisticInference in Dynamic State-Space Models*, 2004.
