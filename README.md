@@ -8,6 +8,8 @@ To visualize the quaternion, a Processing sketch was developed (OrientationVisua
 
 *** Insert Video ***
 
+[![Unscented Kalman Filter for Orientation Estimation using Quaternions on Teensy 4.0](https://img.youtube.com/vi/lnzN03jzCpA/0.jpg)](https://www.youtube.com/watch?v=lnzN03jzCpA "Unscented Kalman Filter for Orientation Estimation using Quaternions on Teensy 4.0")
+
 
 ## Setup/Installation
 ### Hardware Requirements
