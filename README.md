@@ -6,7 +6,6 @@ This repository covers an attitude estimation system with the use of quaternions
 
 To visualize the quaternion, a Processing sketch was developed (OrientationVisualization.pde located in the Processing folder). The sketch reads the quaternion data from USB serial outputted by the Teensy/Arduino and then applies the rotation onto an object for visualization as shown:
 
-*** Insert Video ***
 
 [![Unscented Kalman Filter for Orientation Estimation using Quaternions on Teensy 4.0](https://img.youtube.com/vi/lnzN03jzCpA/0.jpg)](https://www.youtube.com/watch?v=lnzN03jzCpA "Unscented Kalman Filter for Orientation Estimation using Quaternions on Teensy 4.0")
 
